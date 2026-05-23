@@ -7,12 +7,12 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 
 dotenv.config();
-const app = express();
-app.use(cors());
-const port = process.env.PORT || 8000;
 
-const uri =
-  "mongodb+srv://MediQueue:lx1tCZ8PSGUYSwjV@cluster0.cy0tlk2.mongodb.net/?appName=Cluster0";
+const app = express();
+const uri = process.env.MONGODB_URI;
+const port = process.env.PORT || 8000;
+app.use(cors());
+app.use(express.json());
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -37,6 +37,12 @@ async function run() {
       res.send(result);
       // console.log(result);
     });
+    app.get("/home-datadb", async (req, res) => {
+      const cursor = dataCollection.find().limit(6);
+      const result = await cursor.toArray();
+      res.send(result);
+      // console.log(result);
+    });
 
     app.get("/datadb/:dataId", async (req, res) => {
       const { dataId } = req.params;
@@ -44,6 +50,13 @@ async function run() {
       const result = await dataCollection.findOne(query);
       res.send(result);
       // console.log(result);
+    });
+    app.post("/datadb", async (req, res) => {
+      const newData = req.body;
+
+      const result = await dataCollection.insertOne(newData);
+
+      res.send(result);
     });
 
     console.log(
