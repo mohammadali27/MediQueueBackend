@@ -30,12 +30,16 @@ async function run() {
     // await client.db("admin").command({ ping: 1 });
     const db = client.db("MediQueuedb");
     const dataCollection = db.collection("datadb");
+    const Booking = db.collection("collectionBooking");
 
     app.get("/datadb", async (req, res) => {
-      const cursor = dataCollection.find();
-      const result = await cursor.toArray();
+      const email = req.query.email;
+
+      const query = email ? { email } : {};
+
+      const result = await dataCollection.find(query).toArray();
+
       res.send(result);
-      // console.log(result);
     });
     app.get("/home-datadb", async (req, res) => {
       const cursor = dataCollection.find().limit(6);
@@ -44,17 +48,52 @@ async function run() {
       // console.log(result);
     });
 
-    app.get("/datadb/:dataId", async (req, res) => {
-      const { dataId } = req.params;
-      const query = { _id: new ObjectId(dataId) };
+    app.get("/datadb/:id", async (req, res) => {
+      const { id } = req.params;
+      const query = { _id: new ObjectId(id) };
       const result = await dataCollection.findOne(query);
       res.send(result);
       // console.log(result);
+    });
+    app.patch("/datadb/:id", async (req, res) => {
+      const { id } = req.params;
+      const UpdateData = req.body;
+      const result = await dataCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: UpdateData },
+      );
+      res.json(result);
     });
     app.post("/datadb", async (req, res) => {
       const newData = req.body;
 
       const result = await dataCollection.insertOne(newData);
+
+      res.send(result);
+    });
+    app.delete("/datadb/:id", async (req, res) => {
+      const { id } = req.params;
+      const result = await dataCollection.deleteOne({ _id: new ObjectId(id) });
+      res.json(result);
+    });
+    app.get("/Booking/:userId", async (req, res) => {
+      const { userId } = req.params;
+      const result = await Booking.find({ userId }).toArray();
+      res.json(result);
+    });
+    app.post("/Booking", async (req, res) => {
+      const BookinData = req.body;
+      const result = await Booking.insertOne(BookinData);
+      res.json(result);
+    });
+    app.delete("/Booking/:BookingId", async (req, res) => {
+      const { BookingId } = req.params;
+      const result = await Booking.deleteOne({ _id: new ObjectId(BookingId) });
+      res.json(result);
+    });
+    app.get("/datadb/email/:email", async (req, res) => {
+      const email = req.params.email;
+      const result = await dataCollection.find({ email }).toArray();
 
       res.send(result);
     });
