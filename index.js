@@ -5,6 +5,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
+const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 
 dotenv.config();
 
@@ -21,6 +22,25 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+const JWKS = createRemoteJWKSet(new URL("http://localhost:3000/api/auth/jwks"));
+
+const tokenJwt = async (req, res, next) => {
+  const authHeder = req?.headers.authorization;
+  const token = authHeder.split(" ")[1];
+  if (!authHeder) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  if (!token) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  try {
+    const { payload } = await jwtVerify(token, JWKS);
+    console.log(payload);
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+};
 
 async function run() {
   try {
@@ -48,14 +68,14 @@ async function run() {
       // console.log(result);
     });
 
-    app.get("/datadb/:id", async (req, res) => {
+    app.get("/datadb/:id", tokenJwt, async (req, res) => {
       const { id } = req.params;
       const query = { _id: new ObjectId(id) };
       const result = await dataCollection.findOne(query);
       res.send(result);
       // console.log(result);
     });
-    app.patch("/datadb/:id", async (req, res) => {
+    app.patch("/datadb/:id", tokenJwt, async (req, res) => {
       const { id } = req.params;
       const UpdateData = req.body;
       const result = await dataCollection.updateOne(
@@ -76,12 +96,12 @@ async function run() {
       const result = await dataCollection.deleteOne({ _id: new ObjectId(id) });
       res.json(result);
     });
-    app.get("/Booking/:userId", async (req, res) => {
+    app.get("/Booking/:userId", tokenJwt, async (req, res) => {
       const { userId } = req.params;
       const result = await Booking.find({ userId }).toArray();
       res.json(result);
     });
-    app.post("/Booking", async (req, res) => {
+    app.post("/Booking", tokenJwt, async (req, res) => {
       const BookinData = req.body;
       const result = await Booking.insertOne(BookinData);
       res.json(result);
