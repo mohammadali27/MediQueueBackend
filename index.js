@@ -22,7 +22,9 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
-const JWKS = createRemoteJWKSet(new URL("http://localhost:3000/api/auth/jwks"));
+const JWKS = createRemoteJWKSet(
+  new URL(`${process.env.CLIENT_URL}/api/auth/jwks`),
+);
 
 const tokenJwt = async (req, res, next) => {
   const authHeder = req?.headers.authorization;
@@ -45,9 +47,9 @@ const tokenJwt = async (req, res, next) => {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
     // Send a ping to confirm a successful connection
-    // await client.db("admin").command({ ping: 1 });
+
     const db = client.db("MediQueuedb");
     const dataCollection = db.collection("datadb");
     const Booking = db.collection("collectionBooking");
@@ -96,12 +98,12 @@ async function run() {
       const result = await dataCollection.deleteOne({ _id: new ObjectId(id) });
       res.json(result);
     });
-    app.get("/Booking/:userId", tokenJwt, async (req, res) => {
+    app.get("/Booking/:userId", async (req, res) => {
       const { userId } = req.params;
       const result = await Booking.find({ userId }).toArray();
       res.json(result);
     });
-    app.post("/Booking", tokenJwt, async (req, res) => {
+    app.post("/Booking", async (req, res) => {
       const BookinData = req.body;
       const result = await Booking.insertOne(BookinData);
       res.json(result);
@@ -117,7 +119,7 @@ async function run() {
 
       res.send(result);
     });
-
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!",
     );
